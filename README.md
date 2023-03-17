@@ -6,7 +6,7 @@ This is a minimal example of how to build a mouse with the TinyUSB library for t
 
 ## How to build
 
-First of all, if not already done, you have to clone the repository of the pico sdk, available at https://github.com/raspberrypi/pico-sdk.git .
+First of all, if not already done, you have to clone the repository of the pico sdk somewhere on your system. It is available at https://github.com/raspberrypi/pico-sdk.git .
 
 ```shell
 git clone https://github.com/raspberrypi/pico-sdk.git
@@ -31,5 +31,5 @@ If you have a standard Ubuntu distribution (this is probably also true for other
 So if you press the bootsel button, plug the pico, and release the button, you can load the executable with :
 
 ```shell
-cp Synthpathy.uf2 /media/user/RPI-RP2/
+cp auto_mouse.uf2 /media/user/RPI-RP2/
 ```
