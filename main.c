@@ -22,7 +22,9 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
+#include <pico/stdlib.h>
+#include <pico/rand.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -42,9 +44,8 @@ static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 void led_blinking_task(void);
 void hid_task(void);
-void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t *delta_x, uint8_t *delta_y);
+void get_mouse_delta_xy(int8_t *current_x, int8_t *current_y, int8_t *delta_x, int8_t *delta_y);
 
-/*------------- MAIN -------------*/
 int main(void)
 {
     // board_init();
@@ -98,8 +99,9 @@ void tud_resume_cb(void)
 
 static void send_hid_report(uint8_t report_id)
 {
-    // Counts mouse moves
-    static uint8_t mouse_moves = 0;
+    // Current mouse position.
+    static int8_t current_mouse_x = 0;
+    static int8_t current_mouse_y = 0;
 
     // skip if hid is not ready yet
     if (!tud_hid_ready())
@@ -113,8 +115,7 @@ static void send_hid_report(uint8_t report_id)
         int8_t delta_y;
         int8_t const delta_pan = 0;
 
-        get_mouse_delta_xy(mouse_moves, &delta_x, &delta_y);
-        mouse_moves = mouse_moves ^ 1; // Alternate between 0 and 1
+        get_mouse_delta_xy(&current_mouse_x, &current_mouse_y, &delta_x, &delta_y);
 
         // no button, right + down, no scroll, no pan
         tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_x, delta_y, delta_pan, delta_pan);
@@ -177,31 +178,24 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 }
 
 /**
- * @brief returns x and y movements corresponding to a 2 stage cycle : < >
- * @param[in] mouse_moves stage of the cycle.
+ * @brief returns random x & y displacement that stay in a given square.
+ * @param[out] current_x Current horizontal position.
+ * @param[out] current_y Current vertical position.
  * @param[out] delta_x horizontal displacement.
  * @param[out] delta_y vertical displacement.
  */
-void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t *delta_x, uint8_t *delta_y)
+void get_mouse_delta_xy(int8_t *current_x, int8_t *current_y, int8_t *delta_x, int8_t *delta_y)
 {
-    const unsigned char delta = 2;
-    switch (mouse_moves)
-    {
-    case 0:
-        *delta_x = -delta;
-        *delta_y = 0;
-        break;
+    const int8_t max_value = 30;
 
-    case 1:
-        *delta_x = delta;
-        *delta_y = 0;
-        break;
+    const int8_t new_x = ((uint8_t)get_rand_32()) % max_value;
+    const int8_t new_y = ((uint8_t)get_rand_32()) % max_value;
 
-    default:
-        *delta_y = 0;
-        *delta_x = 0;
-        break;
-    }
+    *delta_x = new_x - *current_x;
+    *delta_y = new_x - *current_y;
+
+    *current_x = new_x;
+    *current_y = new_y;
 }
 
 //--------------------------------------------------------------------+
