@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -33,32 +33,32 @@
 
 enum
 {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED = 1000,
-  BLINK_SUSPENDED = 2500,
+    BLINK_NOT_MOUNTED = 250,
+    BLINK_MOUNTED = 1000,
+    BLINK_SUSPENDED = 2500,
 };
 
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 void led_blinking_task(void);
 void hid_task(void);
-void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t* delta_x, uint8_t* delta_y);
+void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t *delta_x, uint8_t *delta_y);
 
 /*------------- MAIN -------------*/
 int main(void)
 {
-  //board_init();
-  tusb_init();
+    // board_init();
+    tusb_init();
 
-  while (1)
-  {
-    tud_task(); // tinyusb device task
-    led_blinking_task();
+    while (1)
+    {
+        tud_task(); // tinyusb device task
+        led_blinking_task();
 
-    hid_task();
-  }
+        hid_task();
+    }
 
-  return 0;
+    return 0;
 }
 
 //--------------------------------------------------------------------+
@@ -68,13 +68,13 @@ int main(void)
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
+    blink_interval_ms = BLINK_MOUNTED;
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-  blink_interval_ms = BLINK_NOT_MOUNTED;
+    blink_interval_ms = BLINK_NOT_MOUNTED;
 }
 
 // Invoked when usb bus is suspended
@@ -82,14 +82,14 @@ void tud_umount_cb(void)
 // Within 7ms, device must draw an average of current less than 2.5 mA from bus
 void tud_suspend_cb(bool remote_wakeup_en)
 {
-  (void)remote_wakeup_en;
-  blink_interval_ms = BLINK_SUSPENDED;
+    (void)remote_wakeup_en;
+    blink_interval_ms = BLINK_SUSPENDED;
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-  blink_interval_ms = BLINK_MOUNTED;
+    blink_interval_ms = BLINK_MOUNTED;
 }
 
 //--------------------------------------------------------------------+
@@ -98,57 +98,57 @@ void tud_resume_cb(void)
 
 static void send_hid_report(uint8_t report_id)
 {
-  // Counts mouse moves
-  static uint8_t mouse_moves = 0;
+    // Counts mouse moves
+    static uint8_t mouse_moves = 0;
 
-  // skip if hid is not ready yet
-  if (!tud_hid_ready())
-    return;
+    // skip if hid is not ready yet
+    if (!tud_hid_ready())
+        return;
 
-  switch (report_id)
-  {
-  case REPORT_ID_MOUSE:
-  {
-    int8_t delta_x;
-    int8_t delta_y;
-    int8_t const delta_pan = 0;
+    switch (report_id)
+    {
+    case REPORT_ID_MOUSE:
+    {
+        int8_t delta_x;
+        int8_t delta_y;
+        int8_t const delta_pan = 0;
 
-    get_mouse_delta_xy(mouse_moves, &delta_x, &delta_y);
-    mouse_moves = (mouse_moves + 1) % 4;
+        get_mouse_delta_xy(mouse_moves, &delta_x, &delta_y);
+        mouse_moves = mouse_moves ^ 1; // Alternate between 0 and 1
 
-    // no button, right + down, no scroll, no pan
-    tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_x, delta_y, delta_pan, delta_pan);
-  }
-  break;
-
-  default:
+        // no button, right + down, no scroll, no pan
+        tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta_x, delta_y, delta_pan, delta_pan);
+    }
     break;
-  }
+
+    default:
+        break;
+    }
 }
 
 // Every 10ms, we will sent 1 report for each HID profile (keyboard, mouse etc ..)
 // tud_hid_report_complete_cb() is used to send the next report after previous one is complete
 void hid_task(void)
 {
-  // Poll every 10ms
-  const uint32_t interval_ms = 250;
-  static uint32_t start_ms = 0;
+    // Poll every 30s
+    const uint32_t interval_ms = 30000;
+    static uint32_t start_ms = 0;
 
-  if (board_millis() - start_ms < interval_ms)
-    return; // not enough time
-  start_ms += interval_ms;
+    if (board_millis() - start_ms < interval_ms)
+        return; // not enough time
+    start_ms += interval_ms;
 
-  // Remote wakeup
-  if (tud_suspended())
-  {
-    // Wake up host if we are in suspend mode
-    // and REMOTE_WAKEUP feature is enabled by host
-    tud_remote_wakeup();
-  }
-  else
-  {
-    send_hid_report(REPORT_ID_MOUSE);
-  }
+    // Remote wakeup
+    if (tud_suspended())
+    {
+        // Wake up host if we are in suspend mode
+        // and REMOTE_WAKEUP feature is enabled by host
+        tud_remote_wakeup();
+    }
+    else
+    {
+        send_hid_report(REPORT_ID_MOUSE);
+    }
 }
 
 // Invoked when sent REPORT successfully to host
@@ -156,8 +156,8 @@ void hid_task(void)
 // Note: For composite reports, report[0] is report ID
 void tud_hid_report_complete_cb(uint8_t instance, uint8_t const *report, uint16_t len)
 {
-  uint8_t next_report_id = report[0] + 1;
-  // Nothing to do
+    uint8_t next_report_id = report[0] + 1;
+    // Nothing to do
 }
 
 // Invoked when received GET_REPORT control request
@@ -165,52 +165,43 @@ void tud_hid_report_complete_cb(uint8_t instance, uint8_t const *report, uint16_
 // Return zero will cause the stack to STALL request
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen)
 {
-  // Not Implemented
-  return 0;
+    // Not Implemented
+    return 0;
 }
 
 // Invoked when received SET_REPORT control request or
 // received data on OUT endpoint ( Report ID = 0, Type = 0 )
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize)
 {
-  // Nothing to do
+    // Nothing to do
 }
 
 /**
- * @brief returns x and y movements corresponding to a 4 stage circle : > ^ < v
+ * @brief returns x and y movements corresponding to a 2 stage cycle : < >
  * @param[in] mouse_moves stage of the cycle.
  * @param[out] delta_x horizontal displacement.
  * @param[out] delta_y vertical displacement.
-*/
-void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t* delta_x, uint8_t* delta_y){
-  const unsigned char delta = 10;
-  switch (mouse_moves)
-  {
-  case 0:
-    *delta_x = 0;
-    *delta_y = delta;
-    break;
-  
-  case 1:
-    *delta_x = delta;
-    *delta_y = 0;
-    break;
+ */
+void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t *delta_x, uint8_t *delta_y)
+{
+    const unsigned char delta = 2;
+    switch (mouse_moves)
+    {
+    case 0:
+        *delta_x = -delta;
+        *delta_y = 0;
+        break;
 
-  case 2:
-    *delta_x = 0;
-    *delta_y = -delta;
-    break;
+    case 1:
+        *delta_x = delta;
+        *delta_y = 0;
+        break;
 
-  case 3:
-    *delta_x = -delta;
-    *delta_y = 0;
-    break;
-
-  default:
-    *delta_y = 0;
-    *delta_x = 0;
-    break;
-  }
+    default:
+        *delta_y = 0;
+        *delta_x = 0;
+        break;
+    }
 }
 
 //--------------------------------------------------------------------+
@@ -218,18 +209,18 @@ void get_mouse_delta_xy(unsigned short mouse_moves, uint8_t* delta_x, uint8_t* d
 //--------------------------------------------------------------------+
 void led_blinking_task(void)
 {
-  static uint32_t start_ms = 0;
-  static bool led_state = false;
+    static uint32_t start_ms = 0;
+    static bool led_state = false;
 
-  // blink is disabled
-  if (!blink_interval_ms)
-    return;
+    // blink is disabled
+    if (!blink_interval_ms)
+        return;
 
-  // Blink every interval ms
-  if (board_millis() - start_ms < blink_interval_ms)
-    return; // not enough time
-  start_ms += blink_interval_ms;
+    // Blink every interval ms
+    if (board_millis() - start_ms < blink_interval_ms)
+        return; // not enough time
+    start_ms += blink_interval_ms;
 
-  board_led_write(led_state);
-  led_state = 1 - led_state; // toggle
+    board_led_write(led_state);
+    led_state = 1 - led_state; // toggle
 }
